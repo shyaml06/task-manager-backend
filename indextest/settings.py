@@ -23,7 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # AI Provider API Key
-GEMINI_API_KEY = "AIzaSyB00hcC2P_ME-FF6Nj5aG6duLLHtwLGV78"
+GEMINI_API_KEY = ""
+
 
 
 # Quick-start development settings - unsuitable for production
