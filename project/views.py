@@ -168,7 +168,7 @@ from .services import get_tasks_by_project
 
 class ProjectsTaskView(APIView):
 
-    permission_classes = [IsEmployee|IsAdmin]
+    permission_classes = [IsEmployee|IsAdmin] 
 
     def get(self, request, project_id):
 
@@ -232,6 +232,8 @@ from django.db import connection
 from .services import update_task_status_db 
 
 class UpdateTaskStatusView(APIView):
+    permission_classes = [IsEmployee|IsAdmin]  
+
     def put(self, request, task_id):
         print("user id",request.user.id)
         new_status = request.data.get('status')
@@ -315,6 +317,7 @@ from rest_framework import status
 from .services import get_assignable_users_db
 
 class AssignableUsersView(APIView):
+    permission_classes=[IsAdmin]  
     def get(self, request):
         try:
             # Fetch the users using our raw SQL service
@@ -333,6 +336,52 @@ class AssignableUsersView(APIView):
                 "message": "Failed to fetch assignable users",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from authcustom.permissions import IsAdmin, IsEmployee
+from .services import generate_workflow_from_ai
+
+class GenerateAIWorkflowView(APIView):
+    permission_classes = [IsAdmin | IsEmployee]
+
+    def post(self, request, project_id):
+        prompt = request.data.get("prompt")
+        
+        if not prompt:
+            return Response({
+                "success": False, 
+                "message": "A 'prompt' is required to generate the workflow."
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            tasks = generate_workflow_from_ai(project_id, prompt)
+            return Response({
+                "success": True,
+                "message": "AI workflow generated successfully.",
+                "data": tasks
+            }, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print("AI Workflow Error:", e)
+            return Response({
+                "success": False,
+                "message": "An error occurred while communicating with the AI service.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CreateWorkflowview(APIView):
+    permission_classes=[IsAdmin]
+
+    def post(self,request):
+        tasks=request.data.get('tasks')
+        print("tasks",tasks)
+        
 
 
 

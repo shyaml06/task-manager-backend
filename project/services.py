@@ -222,4 +222,85 @@ def get_assignable_users_db():
         columns = [col[0] for col in cursor.description]
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
         
+import json
+from google import genai
+from django.conf import settings
+from django.db import connection
+import datetime    
+
+
+def generate_workflow_from_ai(project_id, prompt):
+    
+    """
+    Calls the Gemini API to generate a list of tasks for the project based on the given prompt.
+    Returns structurally created tasks.
+    """
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.")
         
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT name
+            FROM projects
+            WHERE id = %s
+        """, [project_id])
+        project_name = cursor.fetchone()[0] 
+
+    print(project_name)
+    current_date = datetime.date.today().strftime("%Y-%m-%d")   
+    
+    # We use a standard text model for structured output
+    system_prompt = system_prompt = f"""You are an elite Agile Project Manager and System Architect. Your objective is to break down a high-level project request into a logical, sequential, and executable workflow.
+
+PROJECT CONTEXT:
+- Project Name: {project_name}
+- Current Date: {current_date}
+
+INSTRUCTIONS:
+1. Analyze the project request and divide it into actionable, self-contained tasks.
+2. Sequence the tasks logically from start to finish.
+3. Assign a realistic 'due_date' for each task, calculating sequentially forward starting from the Current Date provided above. 
+4. Ensure the 'description' clearly explains the exact outcome expected for that task.
+
+OUTPUT CONSTRAINTS:
+You must return strictly a valid, raw JSON array containing the task objects.
+Do not wrap the output in markdown code blocks. Do not include any conversational text, introductions, or explanations. 
+
+SCHEMA REQUIREMENT:
+Every object in the array MUST contain exactly these three keys:
+- "title" (string): A short, action-oriented title.
+- "description" (string): A detailed explanation of the work to be done.
+- "due_date" (string): The deadline in strict "YYYY-MM-DD" format.
+"""
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=f"{system_prompt}\n\nUser request: {prompt}"
+    )
+    
+    response_text = response.text.strip()
+    # Strip markdown if AI generated it (just in case)
+    if response_text.startswith("```json"):
+        response_text = response_text.replace("```json", "", 1)
+    if response_text.endswith("```"):
+        response_text = response_text[:-3]
+    response_text = response_text.strip()
+        
+    try:
+        task_list = json.loads(response_text)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse AI response into JSON. Response was: {response_text}") from e
+        
+    created_tasks = []
+    for t in task_list:
+        # Create task via existing service
+        task = create_task(
+            project_id=project_id,
+            title=t.get("title", "Untitled AI Task"),
+            description=t.get("description", ""),
+            due_date=t.get("due_date", None)
+        )
+        created_tasks.append(task)
+        
+    return created_tasks

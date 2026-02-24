@@ -14,9 +14,16 @@ from pathlib import Path
 import os
 import logging
 import logging.handlers
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
+
+# AI Provider API Key
+GEMINI_API_KEY = "AIzaSyB00hcC2P_ME-FF6Nj5aG6duLLHtwLGV78"
 
 
 # Quick-start development settings - unsuitable for production

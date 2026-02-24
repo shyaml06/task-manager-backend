@@ -53,6 +53,7 @@ class LoginView(APIView):
 
         username = serializer.validated_data["username"]
         password = serializer.validated_data["password"]
+        print(password)
 
         user_service = userService()
         user = user_service.Get_user_by_username(username)
