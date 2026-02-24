@@ -37,6 +37,8 @@ from django.db import connection
 
 
 def get_tasks_by_project(project_id, status=None, limit=20, offset=0):
+    print("get_tasks_by_project")
+
 
     with connection.cursor() as cursor:
         cursor.execute(
@@ -128,7 +130,7 @@ def get_task_status_summary():
 def get_tasks_per_project():
 
     query = """
-        SELECT p.name, COUNT(t.id),
+        SELECT p.name, COUNT(t.id)
         FROM projects p
         LEFT JOIN tasks t ON p.id = t.project_id
         GROUP BY p.name
@@ -219,3 +221,5 @@ def get_assignable_users_db():
         # Maps the raw rows to a list of dictionaries: [{"id": 1, "username": "admin", "role_id": 1}, ...]
         columns = [col[0] for col in cursor.description]
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        

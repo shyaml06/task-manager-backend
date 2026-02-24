@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from authcustom.permissions import IsAdmin,IsEmployee
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -30,6 +33,7 @@ class Listprojectview(APIView):
 
     def get(self, request):
         projects = get_all_projects()
+        logger.info(f"GET request from {request.user}")
         
         
         return Response({
@@ -61,7 +65,7 @@ from .services import create_task
 
 class CreateTask(APIView):
 
-    permission_classes = [IsEmployee]
+    permission_classes = [IsEmployee|IsAdmin]
     serializer_class = TaskSerializer
 
 
@@ -212,6 +216,7 @@ class DashboardAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        print("DashboardAnalyticsView")
 
         return Response({
             "status_summary": get_task_status_summary(),
@@ -223,13 +228,30 @@ class DashboardAnalyticsView(APIView):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-# Import your service function (adjust the import path based on your folder structure)
+from django.db import connection
 from .services import update_task_status_db 
 
 class UpdateTaskStatusView(APIView):
     def put(self, request, task_id):
+        print("user id",request.user.id)
         new_status = request.data.get('status')
+        assigned_to = request.data.get('assigned_to')
 
+        if assigned_to is None:
+            return Response(
+                {"success": False, "message": "Assigned to is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )   
+
+
+        if int(assigned_to )!=int(request.user.id):
+            print("user id",request.user.id)
+
+            return Response(
+                {"success": False, "message": "You are not authorized to update this task"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )   
+         
         if not new_status:
             return Response(
                 {"success": False, "message": "Status is required"}, 
@@ -311,3 +333,6 @@ class AssignableUsersView(APIView):
                 "message": "Failed to fetch assignable users",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
