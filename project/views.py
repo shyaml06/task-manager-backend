@@ -347,8 +347,8 @@ class GenerateAIWorkflowView(APIView):
     permission_classes = [IsAdmin | IsEmployee]
 
     def post(self, request, project_id):
-        prompt = request.data.get("prompt")
-        
+        prompt = request.data.get("prompt") 
+      
         if not prompt:
             return Response({
                 "success": False, 
@@ -356,7 +356,8 @@ class GenerateAIWorkflowView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            tasks = generate_workflow_from_ai(project_id, prompt)
+            tasks = generate_workflow_from_ai(prompt,project_id)
+            print("tasks",len(tasks))   
             return Response({
                 "success": True,
                 "message": "AI workflow generated successfully.",
@@ -384,4 +385,19 @@ class CreateWorkflowview(APIView):
         
 
 
+from .services import get_projects_test
 
+class GetProjectsView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self, request):
+        try:    
+            projects = get_projects_test()
+            return Response(projects)   
+        except Exception as e:
+            print("Error fetching projects:", e)
+            return Response({
+                "success": False,
+                "message": "An error occurred while fetching projects.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   

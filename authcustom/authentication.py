@@ -25,6 +25,8 @@ class CookieJWTAuthentication(JWTAuthentication):
 
         # ✅ Get user_id from JWT
         user_id = validated_token.get("user_id")
+        session_id = validated_token.get("session_id")
+        
 
         if not user_id:
             return None
@@ -46,7 +48,8 @@ class CookieJWTAuthentication(JWTAuthentication):
         custom_user = CustomUser(
             user_id=user_id,
             username=user["username"],
-            role=role
+            role=role,
+            session_id=session_id
         )
 
         return (custom_user, validated_token)

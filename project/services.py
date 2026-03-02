@@ -229,7 +229,10 @@ from django.db import connection
 import datetime    
 
 
-def generate_workflow_from_ai(project_id, prompt):
+def generate_workflow_from_ai(prompt,project_id):
+    print("project_id",project_id)
+    print("prompt",prompt)
+
     
     """
     Calls the Gemini API to generate a list of tasks for the project based on the given prompt.
@@ -239,6 +242,7 @@ def generate_workflow_from_ai(project_id, prompt):
         raise ValueError("Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.")
         
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT name
@@ -292,15 +296,34 @@ Every object in the array MUST contain exactly these three keys:
     except json.JSONDecodeError as e:
         raise ValueError(f"Failed to parse AI response into JSON. Response was: {response_text}") from e
         
-    created_tasks = []
-    for t in task_list:
-        # Create task via existing service
-        task = create_task(
-            project_id=project_id,
-            title=t.get("title", "Untitled AI Task"),
-            description=t.get("description", ""),
-            due_date=t.get("due_date", None)
-        )
-        created_tasks.append(task)
-        
-    return created_tasks
+    # created_tasks = []
+    # for t in task_list:
+    #     # Create task via existing service
+    #     task = create_task(
+    #         project_id=project_id,
+    #         title=t.get("title", "Untitled AI Task"),
+    #         description=t.get("description", ""),
+    #         due_date=t.get("due_date", None)
+    #     )
+    #     created_tasks.append(task)
+    # print(created_tasks) 
+
+    return task_list
+
+
+def get_projects_test():
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM projects")
+            rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+    except Exception as e:
+        print("Error fetching projects:", e)
+        return []
+
+
+
+    
+
+

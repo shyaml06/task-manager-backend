@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     Listprojectview, Createprojectview, CreateTask, ProjectsTaskView, 
     DashboardAnalyticsView, UpdateTaskStatusView, AssignTaskView, 
-    AssignableUsersView, GenerateAIWorkflowView
+    AssignableUsersView, GenerateAIWorkflowView, GetProjectsView
 )
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path('task/<int:task_id>/update/', UpdateTaskStatusView.as_view(), name='update-task-status'),
     path('task/<int:task_id>/assign/', AssignTaskView.as_view(), name='assign-task'),
     path('users/assignable/', AssignableUsersView.as_view(), name='assignable-users'),
+    path("test/", GetProjectsView.as_view()),
 ]
