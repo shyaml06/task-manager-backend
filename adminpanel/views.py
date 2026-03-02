@@ -125,6 +125,20 @@ class Roleview(APIView):
             "Role":role
             
         })
-         
+        
+from .services import get_login_activity   
     
+class LoginactivityView(APIView):
+    permission_classes=[IsAdminUser]
     
+    def get(self,request):
+        
+       try:
+            res=get_login_activity();
+       except Exception as e:
+           print(e)
+           return Response(e)
+           
+       return Response(res);
+    
+        

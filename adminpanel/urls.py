@@ -3,7 +3,8 @@ from .views import (
     AdminStatsView,
     AdminUserList,
     AdminAssignRole,
-    Roleview
+    Roleview,
+    LoginactivityView
 )
 
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
 
     path("assign-role/", AdminAssignRole.as_view()),
     path("role/", Roleview.as_view()),
+    path ("loginactivity/",LoginactivityView.as_view())
 
 ]
