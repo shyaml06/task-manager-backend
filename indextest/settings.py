@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # AI Provider API Key
-GEMINI_API_KEY = "AIzaSyA2m1nCuePMbGPlw_yeJuldXKmNnM89lOI"
+GEMINI_API_KEY = ""
 
 
 
@@ -295,5 +295,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "ladanishyam61@gmail.com"
-EMAIL_HOST_PASSWORD = 'twoh lyqy tkov prpm'
+EMAIL_HOST_PASSWORD = ''
 
