@@ -11,6 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .services import insert_role,assign_role
 from .utils import get_user_role
 from .permissions import IsAdmin
+from rest_framework_simplejwt.exceptions import TokenError
 
 # Create your view
 #  here.
@@ -50,7 +51,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 import uuid
-
+from .services import insert_refresh_token
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -128,6 +129,13 @@ class LoginView(APIView):
         role = get_user_role(user["user_id"])
         refresh["role"] = role
         refresh["session_id"] = session_id
+        refresh_token=str(refresh)
+        
+        try:
+            insert_refresh_token(user["user_id"], refresh_token)
+        except Exception as e:
+            print(e);
+            return 
         
 
 
@@ -185,7 +193,6 @@ from rest_framework import status
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
-   
 
 
     def post(self, request):
@@ -329,4 +336,69 @@ class ResetPasswordView(APIView):
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND
             )   
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from .services import validate_refresh_token
+
+class RefreshView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token missing"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            # Validate JWT structure + expiry
+            refresh = RefreshToken(refresh_token)
+
+        except TokenError:
+            return Response(
+                {"error": "Invalid refresh token"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Validate against DB
+        user_id = validate_refresh_token(refresh_token)
+
+        if not user_id:
+            return Response(
+                {"error": "Token revoked or expired"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # generate new access token
+        access_token = refresh.access_token
+
+        response = Response(
+            {"message": "Token refreshed"},
+            status=status.HTTP_200_OK
+        )
+
+        response.set_cookie(
+            key="access_token",
+            value=str(access_token),
+            httponly=True,
+            secure=settings.JWT_COOKIE_SECURE,
+            samesite=settings.JWT_COOKIE_SAMESITE,
+            path="/"
+        )
+
+        return response
 

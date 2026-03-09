@@ -37,22 +37,26 @@ from django.db import connection
 
 
 def get_tasks_by_project(project_id, status=None, limit=20, offset=0):
-    print("get_tasks_by_project")
+    print("get_tasks_by_project",project_id)
 
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM tasks where project_id=%s;",
+                [project_id]
+            )
+            data=makedictionary(cursor)
+            print(data)
+            return data
+            
+           
+    except Exception as e:
+        print(e)
+        return None
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT * FROM tasks where project_id=%s;",
-            [project_id]
-        )
+    
 
-        cols = [c[0] for c in cursor.description]
-        rows = cursor.fetchall()
-
-    return [
-        dict(zip(cols, row))
-        for row in rows
-    ]
+  
 
     
 
@@ -107,6 +111,7 @@ from django.db import connection
 
 
 def get_task_status_summary():
+    
 
     query = """
         SELECT status, COUNT(*) as count
@@ -323,7 +328,47 @@ def get_projects_test():
         return []
 
 
-
+def get_email(id):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT email FROM users where id=%s",[id])
+            rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+    except Exception as e:
+        print("Error fetching projects:", e)
+        return None
+    
     
 
 
+
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
+
+def Send_task_email(email):
+    try:
+        subject = "task assignment"
+
+        # Render HTML template
+       
+
+        # Optional plain text fallback
+        text_content = f"you have been assigned to a task"
+
+        email_message = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [email]
+        )
+
+       
+        email_message.send()
+
+        return True
+
+    except Exception as e:
+        print(e)
+        return False  

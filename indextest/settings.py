@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # AI Provider API Key
-GEMINI_API_KEY = "AIzaSyC6eNzfKA6WGBZLbMJbDV9mAaMNFfwhd-Y"
+GEMINI_API_KEY = "AIzaSyA2m1nCuePMbGPlw_yeJuldXKmNnM89lOI"
 
 
 
@@ -200,6 +200,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100
 }
 from datetime import timedelta
 
@@ -292,6 +294,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ""
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_USER = "ladanishyam61@gmail.com"
+EMAIL_HOST_PASSWORD = 'twoh lyqy tkov prpm'
 

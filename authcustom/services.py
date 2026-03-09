@@ -251,3 +251,87 @@ def mark_token_used(token):
 
 
 
+
+import hashlib
+
+def hash_token(token: str):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+
+
+
+import uuid
+from datetime import timedelta
+from django.db import connection, transaction
+from django.utils import timezone
+
+
+def insert_refresh_token(user_id, refresh_token):
+    """
+    Store refresh token in DB
+    """
+
+    token_hash = hash_token(refresh_token)
+    print(token_hash)
+    query = """
+        INSERT INTO refresh_tokens
+        (id, user_id, token_hash, expires_at)
+        VALUES (%s, %s, %s, %s)
+    """
+
+    expires_at = timezone.now() + timedelta(days=7)
+
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute(query, [
+                str(uuid.uuid4()),
+                user_id,
+                token_hash,
+                expires_at
+            ])
+
+
+def validate_refresh_token(refresh_token):
+    """
+    Validate refresh token and return user_id
+    """
+
+    token_hash = hash_token(refresh_token)
+
+    query = """
+        SELECT user_id
+        FROM refresh_tokens
+        WHERE token_hash = %s
+        AND revoked = FALSE
+        AND expires_at > NOW()
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, [token_hash])
+
+        result = cursor.fetchone()
+
+    if not result:
+        return None
+
+    return result[0]
+
+
+
+
+def revoke_all_user_tokens(user_id):
+    """
+    Logout user from all devices
+    """
+
+    query = """
+        UPDATE refresh_tokens
+        SET revoked = TRUE,
+            revoked_at = NOW()
+        WHERE user_id = %s
+    """
+
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute(query, [user_id])

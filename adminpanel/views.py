@@ -127,18 +127,36 @@ class Roleview(APIView):
         })
         
 from .services import get_login_activity   
+from .pagination import CustomPagination   
+from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.generics import ListAPIView
+
+class LoginactivityView(ListAPIView):
+    permission_classes = [IsAdminUser]
+    pagination_class = CustomPagination
     
-class LoginactivityView(APIView):
-    permission_classes=[IsAdminUser]
-    
-    def get(self,request):
-        
-       try:
-            res=get_login_activity();
-       except Exception as e:
-           print(e)
-           return Response(e)
-           
-       return Response(res);
-    
-        
+    def list(self, request, *args, **kwargs):
+        try:
+            # 1. Fetch the raw data
+            res = get_login_activity()
+            
+            # 2. Pass the list to the paginator
+            page = self.paginate_queryset(res)
+            print(len(page))
+            
+            if page is not None:
+                # 3. Return the properly formatted paginated response
+                return self.get_paginated_response(page)
+            
+            # Fallback if pagination is disabled
+            return Response(res)
+            
+        except Exception as e:
+            print(f"Error fetching login activity: {e}")
+            # 4. Return a proper error format with a 500 status code
+            return Response(
+                {"error": "An internal error occurred while fetching login activity."}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from authcustom.permissions import IsAdmin,IsEmployee
 import logging
+from rest_framework.generics import ListAPIView
+from .pagination import ProjectPagination
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +46,16 @@ class Listprojectview(APIView):
     
     
 
-class Getprojecttask(APIView):
+class Getprojecttask(ListAPIView):
     permission_classes=[IsEmployee|IsAdmin]
+    pagination_class=[ProjectPagination]
 
     
-    def get(self, request, project_id):
+    def list(self, request, project_id):
         tasks = get_tasks_by_project(project_id)
+        res=self.get_paginated_response(tasks)
         serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(res, status=status.HTTP_200_OK)
 
 
 from rest_framework.views import APIView
@@ -164,7 +168,6 @@ from rest_framework import status
 
 from authcustom.permissions import IsEmployee
 from .services import get_tasks_by_project
-
 
 class ProjectsTaskView(APIView):
 
@@ -293,16 +296,19 @@ class UpdateTaskStatusView(APIView):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .services import assign_task_db
+from .services import assign_task_db,get_email,Send_task_email
 
 class AssignTaskView(APIView):
     permission_classes=[IsAdmin]
     def patch(self, request, task_id):
-        # We expect {"assigned_to": 5} or {"assigned_to": null} from React
+        
         user_id = request.data.get('assigned_to') 
 
         try:
             updated = assign_task_db(task_id, user_id)
+            email=get_email(user_id)
+            print(email[0])
+            Send_task_email(email[0]['email'])
             if updated:
                 return Response({"success": True, "message": "Task assignment updated"})
             return Response({"success": False, "message": "Task not found"}, status=404)
@@ -320,10 +326,10 @@ class AssignableUsersView(APIView):
     permission_classes=[IsAdmin]  
     def get(self, request):
         try:
-            # Fetch the users using our raw SQL service
+           
             users = get_assignable_users_db()
             
-            # Return the data in the format React expects: res.data.data
+            
             return Response({
                 "success": True,
                 "data": users
@@ -343,6 +349,8 @@ from rest_framework import status
 from authcustom.permissions import IsAdmin, IsEmployee
 from .services import generate_workflow_from_ai
 
+
+
 class GenerateAIWorkflowView(APIView):
     permission_classes = [IsAdmin | IsEmployee]
 
@@ -354,7 +362,7 @@ class GenerateAIWorkflowView(APIView):
                 "success": False, 
                 "message": "A 'prompt' is required to generate the workflow."
             }, status=status.HTTP_400_BAD_REQUEST)
-            
+        
         try:
             tasks = generate_workflow_from_ai(prompt,project_id)
             print("tasks",len(tasks))   
@@ -385,11 +393,12 @@ class CreateWorkflowview(APIView):
         
 
 
-from .services import get_projects_test
+from .services import get_projects_test,Send_task_email
 
 class GetProjectsView(APIView):
     authentication_classes = []
     permission_classes = []
+    
     def get(self, request):
         try:    
             projects = get_projects_test()
@@ -400,4 +409,7 @@ class GetProjectsView(APIView):
                 "success": False,
                 "message": "An error occurred while fetching projects.",
                 "error": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
